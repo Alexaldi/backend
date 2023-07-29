@@ -17,8 +17,8 @@ const router = express.Router();
 
 //? Users API
 router.get('/refresh', refreshToken)
-router.get('/users', verifyToken, getUsers);
-router.get('/users/:id', verifyToken, getUserById);
+router.get('/users', getUsers);
+router.get('/users/:id', getUserById);
 router.patch('/users/:id', editUsers);
 router.delete('/users/:id', deleteUser);
 //* auth api

@@ -21,7 +21,7 @@ export const getUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
     const { id } = req.params
     try {
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.isValidObjectId(id)) {
             return res.status(404).json({ error: 'user not found' })
         }
 
@@ -41,7 +41,7 @@ export const editUsers = async (req, res) => {
     const { name, email, whatsapp, password, confPassword, oldPassword } = req.body;
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.isValidObjectId(id)) {
         return res.status(404).json({ error: 'User Tidak Ada' })
     }
 
@@ -103,7 +103,6 @@ export const deleteUser = async (req, res) => {
 }
 
 //! Authorization 
-
 //* Register and Email Verification
 
 const sendOTP = async (email, otp) => {

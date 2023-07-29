@@ -3,10 +3,12 @@ import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv"
-import UserRoute from "./routes/userRoute.js";
 import multer from 'multer'
 import path from 'path';
 import url from 'url';
+
+import UserRoute from "./routes/userRoute.js";
+import BookingRoute from "./routes/bookingRoute.js"
 
 dotenv.config()
 const upload = multer()
@@ -39,6 +41,9 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 app.use(cookieParser());
 app.use(express.json());
+
 app.use('/api/carport', UserRoute);
+app.use('/api/carport', BookingRoute);
+
 
 app.listen(process.env.PORT, () => console.log('Server up and running...'));
