@@ -10,11 +10,29 @@ import path from 'path';
 import url from 'url';
 
 export const getUsers = async (req, res) => {
+    const { name } = req.query
     try {
+        if (name) {
+            const users = await User.find(
+                { name: { $regex: name, $options: 'i' } },
+                { name: 1, whatsapp: 1, email: 1 }
+            );
+            return users.length
+                ? res.status(200).json(users)
+                : res.status(404).json({ message: 'Data tidak ditemukan.' });
+        }
+
         const users = await User.find({}, { name: 1, email: 1, whatsapp: 1 });
-        res.json(users);
+
+        return res.json({
+            status: 'succes',
+            data: users,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
     }
 }
 
@@ -153,12 +171,13 @@ export const Register = async (req, res) => {
     const { name, email, whatsapp, password, confPassword, role } = req.body;
 
     try {
-        if (!validator.isEmail(email)) {
-            return res.status(400).json({ message: "Email tidak valid" });
-        }
-        if (!validator.isMobilePhone(whatsapp, 'id-ID')) {
-            return res.status(400).json({ message: "Nomor telepon tidak valid" });
-        }
+        // if (!validator.isEmail(email)) {
+        //     return res.status(400).json({ message: "Email tidak valid" });
+        // }
+        // if (!validator.isMobilePhone(whatsapp, 'id-ID')) {
+        //     return res.status(400).json({ message: "Nomor telepon tidak valid" });
+        // }
+        //! Code get camment bcs is a developing case if is done dont forget to remove comment 
         if (password !== confPassword) {
             return res.status(400).json({ msg: "Password dan Confirm Password tidak cocok" });
         }
@@ -178,29 +197,33 @@ export const Register = async (req, res) => {
             password: hashPassword,
             role,
             new_otp: otp,
+            new_verified: true //! TESTING DONT FORGET REMOVE IF TEST DONE
         });
 
         await user.save();
 
-        await sendOTP(email, otp);
+        // await sendOTP(email, otp);
 
         res.json({ msg: "OTP has been sent to your email for verification" });
 
     } catch (error) {
-        if (error.code === 11000) {
-            const { keyPattern } = error;
-            const duplicateFields = Object.keys(keyPattern);
+        // if (error.code === 11000) {
+        //     const { keyPattern } = error;
+        //     const duplicateFields = Object.keys(keyPattern);
 
-            if (duplicateFields.includes('email') && duplicateFields.includes('whatsapp')) {
-                res.status(400).json({ message: "Email dan WhatsApp sudah terdaftar" });
-            } else if (duplicateFields.includes('email')) {
-                res.status(400).json({ message: "Email sudah terdaftar" });
-            } else if (duplicateFields.includes('whatsapp')) {
-                res.status(400).json({ message: "WhatsApp sudah terdaftar" });
-            } else {
-                res.status(400).json({ message: "Data sudah terdaftar" });
-            }
-        } else {
+        //     if (duplicateFields.includes('email') && duplicateFields.includes('whatsapp')) {
+        //         res.status(400).json({ message: "Email dan WhatsApp sudah terdaftar" });
+        //     } else if (duplicateFields.includes('email')) {
+        //         res.status(400).json({ message: "Email sudah terdaftar" });
+        //     } else if (duplicateFields.includes('whatsapp')) {
+        //         res.status(400).json({ message: "WhatsApp sudah terdaftar" });
+        //     } else {
+        //         res.status(400).json({ message: "Data sudah terdaftar" });
+        //     }
+        // } else {
+        //     res.status(500).json({ message: error.message });
+        // }
+        if (error) {
             res.status(500).json({ message: error.message });
         }
     }

@@ -23,10 +23,25 @@ const Booking = new mongoose.Schema({
             type: String,
             required: true,
         },
+        color: {
+            type: String,
+            required: true
+        },
+        mileage: {
+            type: Number,
+            required: true
+        },
+        image_url: {
+            type: String
+        },
     },
     problem_description: {
         type: String,
         required: true,
+    },
+    booking_date: {
+        type: Date,
+        required: true
     },
     status: {
         type: String,
