@@ -1,4 +1,4 @@
-import User from "../models/userModel.js";
+import User from "../models/userModel.js"
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import mongoose from 'mongoose'
@@ -8,6 +8,7 @@ import { Mail } from "../helper/mails.js";
 import ejs from 'ejs';
 import path from 'path';
 import url from 'url';
+import { __dirname } from "../helper/global.js";
 
 export const getUsers = async (req, res) => {
     const { name } = req.query
@@ -77,6 +78,9 @@ export const editUsers = async (req, res) => {
 
     try {
         const user = await User.findOne({ _id: id });
+        if (!user) {
+            return res.status(404).json({ error: 'user not found' })
+        }
         if (password && oldPassword) {
             const isMatch = await bcrypt.compare(oldPassword, user.password);
             if (!isMatch) {
@@ -85,25 +89,30 @@ export const editUsers = async (req, res) => {
             const salt = await bcrypt.genSalt();
             const hashPassword = await bcrypt.hash(password, salt);
             await User.updateOne({ _id: id }, {
-                name,
-                email,
-                whatsapp,
-                password: hashPassword
-            });
+                $set: {
+                    name,
+                    email,
+                    whatsapp,
+                    password: hashPassword
+                }
+            })
         } else {
             await User.updateOne({ _id: id }, {
-                name,
-                email,
-                whatsapp,
+                $set: {
+                    name,
+                    email,
+                    whatsapp,
+                }
             });
         }
 
         res.json({ msg: "Edit Profile Berhasil" });
     } catch (error) {
+        console.log(error);
         if (error.code === 11000) {
             res.status(400).json({ message: "Email Atau Whatsapp Telah Terdaftar" });
         } else {
-            res.status(500).json({ message: "Terjadi kesalahan saat mengedit Profile" });
+            res.status(500).json({ message: "Terjadi kesalahan saat mengedit Profile", error });
         }
     }
 };
@@ -126,10 +135,7 @@ export const deleteUser = async (req, res) => {
 const sendOTP = async (email, otp) => {
     const mailInstance = Mail();
 
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-
-    const emailTemplatePath = path.join(__dirname, '../helper/html/signup.ejs');
+    const emailTemplatePath = path.join(__dirname, '/html/signup.ejs');
     const html = await ejs.renderFile(emailTemplatePath, {
         otp: otp
     });
@@ -143,6 +149,7 @@ const sendOTP = async (email, otp) => {
 
     await mailInstance.sendMail(mailOptions);;
 }
+
 
 export const VerifyRegister = async (req, res) => {
     const { email, otp } = req.body;

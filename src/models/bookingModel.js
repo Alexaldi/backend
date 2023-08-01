@@ -31,7 +31,7 @@ const Booking = new mongoose.Schema({
             type: Number,
             required: true
         },
-        image_url: {
+        image: {
             type: String
         },
     },
@@ -45,7 +45,7 @@ const Booking = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["waiting", "ready", "in_progress", "completed"],
+        enum: ["waiting", "ready", "in_progress", "completed", "cancelled"],
         default: "waiting",
     },
     created_at: {

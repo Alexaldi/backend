@@ -9,13 +9,43 @@ import url from 'url';
 
 import UserRoute from "./routes/userRoute.js";
 import BookingRoute from "./routes/bookingRoute.js"
+import { __dirname } from "./helper/global.js";
 
 dotenv.config()
-const upload = multer()
 const app = express();
 
 //*set view engine
 app.set('view engine', 'ejs');
+
+
+const fileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/images')
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname)
+    }
+})
+
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/png' ||
+        file.mimetype === 'image/jpg' ||
+        file.mimetype === 'image/jpeg'
+    ) {
+        cb(null, true);
+    } else {
+        cb(null, false)
+    }
+}
+
+app.use(multer({
+    storage: fileStorage,
+    limits: {
+        fileSize: 1024 * 1024 * 2
+    },
+    fileFilter: fileFilter
+
+}).single('image'))
 
 app.use((req, res, next) => {
     console.log(req.path, req.method)
@@ -33,14 +63,8 @@ db.once('open', () => console.log('Database Connected...'));
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
-app.use(upload.array());
-
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, 'public')))
-
+app.use('/public/images', express.static(path.join(__dirname, '../../public/images')))
 app.use(cookieParser());
-app.use(express.json());
 
 app.use('/api/carport', UserRoute);
 app.use('/api/carport', BookingRoute);

@@ -1,16 +1,16 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/userModel.js';
+import User from '../models/userModel.js'
 import bcrypt from 'bcrypt'
 import { Mail } from '../helper/mails.js'
 import crypto from 'crypto'
 import ejs from 'ejs';
 import path from 'path';
 import url from 'url';
+import { __dirname } from '../helper/global.js';
 //! Forgot password Endpoint controller
 
 export const forgotPassword = async (req, res) => {
     const { email } = req.body;
-    const mailInstance = Mail();
 
     try {
         const user = await User.findOne({ email });
@@ -18,6 +18,20 @@ export const forgotPassword = async (req, res) => {
             return res.status(400).json({ message: 'Email not found' });
         }
 
+        await sendOtp(email, user)
+
+        return res.status(200).json({ message: 'OTP sent to email' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+//! For Verify User OTP
+
+const sendOtp = async (email, user) => {
+    const mailInstance = Mail()
+    try {
         // Generate OTP
         const generateRandomString = (length) => {
             return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
@@ -33,10 +47,7 @@ export const forgotPassword = async (req, res) => {
             reset_token: token,
         });
 
-        const __filename = url.fileURLToPath(import.meta.url);
-        const __dirname = path.dirname(__filename);
-
-        const emailTemplatePath = path.join(__dirname, '../helper/html/email.ejs');
+        const emailTemplatePath = path.join(__dirname, '/html/email.ejs');
         const html = await ejs.renderFile(emailTemplatePath, {
             name: user.name,
             otp: otp
@@ -51,15 +62,10 @@ export const forgotPassword = async (req, res) => {
         };
 
         await mailInstance.sendMail(mailOptions);
-
-        return res.status(200).json({ message: 'OTP sent to email' });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ message: error.message });
     }
-};
-
-//! For Verify User OTP
+}
 
 export const verifyOtp = async (req, res) => {
     const { email, otp } = req.body;
