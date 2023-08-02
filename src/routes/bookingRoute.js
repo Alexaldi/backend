@@ -4,7 +4,8 @@ import {
     getBooking,
     getBookingById,
     editForUser,
-    cancelBooking
+    cancelBooking,
+    updateStatus
 } from "../controllers/bookings.js";
 
 const bookingRoute = express.Router()
@@ -14,4 +15,5 @@ bookingRoute.get('/bookings/:id', getBookingById)
 bookingRoute.post('/bookings', createBooking)
 bookingRoute.patch('/bookingsus/:id', editForUser)
 bookingRoute.patch('/booking/cancelled/:id', cancelBooking)
+bookingRoute.patch('/booking/status/:id', updateStatus)
 export default bookingRoute

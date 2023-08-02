@@ -3,6 +3,7 @@ import Booking from '../models/bookingModel.js'
 import { __dirname } from '../helper/global.js'
 import path from 'path';
 import fs from 'fs';
+import { io } from '../index.js';
 
 const fieldData = 'user_id cars problem_description booking_date status'
 
@@ -202,12 +203,60 @@ export const cancelBooking = async (req, res) => {
 export const updateStatus = async (req, res) => {
     const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) {
-        return res.status(404).json({ error: 'booking not found' })
+        return res.status(404).json({ error: 'booking not found' });
     }
+    const session = await mongoose.startSession();
     try {
+        session.startTransaction();
+        // Get the current booking data
+        const booking = await Booking.findById(id).session(session);
+        if (!booking) {
+            return res.status(404).json({ message: 'Data not found' });
+        }
 
+        // Check if the current status is ready
+        if (booking.status !== undefined && booking.status !== null) {
+            // Update the status to in_progress
+            booking.status = 'in_progress';
+            await booking.save();
+
+            // Emit a socket event to notify clients about the status change to in_progress
+            !io.emit('bookingUpdated', { id: booking._id, status: booking.status });
+
+            // Find older bookings with status 'waiting' and update them to 'ready'
+            const readyBookingsCount = await Booking.countDocuments({ status: 'ready' });
+            const olderBookingsLimit = readyBookingsCount >= 1 ? 1 : 2;
+
+            const olderBookings = await Booking.find({
+                _id: { $ne: booking._id }, // Exclude the current booking
+                status: 'waiting',
+            }).sort({ created_at: 1 })
+                .limit(olderBookingsLimit)
+                .session(session)
+
+            for (const olderBooking of olderBookings) {
+                olderBooking.status = 'ready';
+                await olderBooking.save();
+                // Emit a socket event to notify clients about the status change to ready for older bookings
+                io.emit('bookingUpdated', { id: olderBooking._id, status: olderBooking.status });
+            }
+
+            // Commit the transaction
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.json({ message: 'Status Booking Telah DiUpdate' });
+        } else if (booking.status !== 'ready') {
+            return res.status(400).json({ message: 'Status Booking Belum Ready' })
+        }
+        // If the current status is not ready, return an error message
+        return res.status(400).json({ message: 'Invalid status update' });
     } catch (error) {
+        // If an error occurs, abort the transaction
+        await session.abortTransaction();
+        session.endSession();
 
+        res.status(500).json({ message: error.message });
     }
 }
 
